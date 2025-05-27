@@ -1,6 +1,12 @@
 import http.client
 import json
 import csv
+import os
+import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+
 def order_array_by_id(array):
     """
     Sorts an array of dictionaries by the 'id' key.
@@ -36,6 +42,8 @@ def get_keler_data(top=100, skip=0):
     return json.loads(data)
 
 if __name__ == "__main__":
+   
+    
     page_size = 100
     csv_headers = []
     records = []
@@ -50,6 +58,8 @@ if __name__ == "__main__":
         print("No data found or invalid response.")
         exit(1)
     print("CSV headers fetched successfully.")
+    if os.environ.get('DEBUG'):
+        record_count = 100  # For debugging, limit to 100 records
     print("Record count:", record_count)
     for i in range(0, record_count, page_size):
         print(f"Fetching records {i} to {i + page_size}...")
@@ -75,3 +85,8 @@ if __name__ == "__main__":
             "data": ordered_records,
             "count": len(ordered_records)
         }, f, ensure_ascii=False)
+    df = pd.DataFrame(ordered_records)
+    table = pa.Table.from_pandas(df)
+    pq.write_table(table, 'isin_data.parquet')
+    print("Parquet file created successfully.")
+    
